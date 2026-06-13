@@ -1,0 +1,18 @@
+version: "3.8"
+
+services:
+  libreauth-bot:
+    build: .
+    restart: unless-stopped
+    environment:
+      - TOKEN=${TOKEN}
+      - TYPE=${TYPE:-production}
+      - DEVELOPMENT_SERVER_ID=${DEVELOPMENT_SERVER_ID:-}
+      - DATABASE_PATH=/data/json.sqlite
+      - LOG_WEBHOOK_URL=${LOG_WEBHOOK_URL:-}
+      - SELLER_API_URL=${SELLER_API_URL:-https://libreauth.nutexe.dev/seller-api/}
+    volumes:
+      - libreauth-data:/data
+
+volumes:
+  libreauth-data:

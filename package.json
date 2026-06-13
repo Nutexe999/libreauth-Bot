@@ -1,0 +1,34 @@
+{
+  "name": "libreauth-discord-bot",
+  "version": "1.0.0",
+  "description": "LibreAuth Seller API Discord Bot — genkey, ban, addhash, extend",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "keywords": [
+    "libreauth",
+    "seller-api",
+    "discordjs14"
+  ],
+  "author": "Nutexe999",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Nutexe999/libreauth-Bot.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Nutexe999/libreauth-Bot/issues"
+  },
+  "homepage": "https://github.com/Nutexe999/libreauth-Bot#readme",
+  "dependencies": {
+    "better-sqlite3": "^9.2.2",
+    "discord.js": "^14.14.1",
+    "dotenv": "^16.3.1",
+    "node-fetch": "^2.7.0",
+    "quick.db": "^9.1.7"
+  }
+}
