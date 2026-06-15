@@ -37,11 +37,17 @@ async function sellerText(sellerkey, type, params = {}) {
 const ERROR_HINTS = {
     "Unknown seller API type":
         "Seller Key ไม่มีสิทธิ์ addkey — เปิดใน Panel → แอป → Seller API → Key Permissions",
+    "Permission denied":
+        "เปิด permission ของ type นั้นใน Panel → Seller API → Key Permissions",
     "Invalid sellerkey": "Seller Key ไม่ถูกต้อง หรือ IP ไม่ตรง whitelist",
-    "Seller API is not available":
+    "IP not whitelisted": "เพิ่ม IP ของ VPS/bot ใน Seller Key whitelist",
+    "Seller API requires Pro":
         "แพ็กเกจต้องเป็น Pro หรือ Enterprise ถึงจะใช้ Seller API ได้",
+    "Seller subscription expired": "ต่ออายุ seller subscription ใน Panel",
+    "Invalid expiry": "expiry ต้อง ≥ 1 วัน",
+    "Invalid subscription": "สร้าง subscription tier ใน Panel ก่อน",
     "LibreAuth API error":
-        "API addkey ล้มเหลว (HTTP 500) — เปิดสิทธิ์ **Keys / addkey** ใน Panel → Seller API แล้วสร้าง key ใหม่",
+        "HTTP 500 จากฝั่ง LibreAuth API — ตรวจ Panel Event Logs หรือ mask ที่ส่ง",
 };
 
 function hintForError(msg) {
@@ -50,6 +56,15 @@ function hintForError(msg) {
         if (String(msg).includes(key)) return hint;
     }
     return null;
+}
+
+function normalizeMask(mask) {
+    let m = String(mask || "").trim();
+    if (!m) return "******-******-******";
+    if (!m.includes("*") && m.length < 12) {
+        m = m.replace(/-+$/, "") + "-******-******";
+    }
+    return m;
 }
 
 function extractKey(json) {
@@ -62,7 +77,10 @@ function extractKey(json) {
     if (key) return String(key).trim();
     if (typeof json.message === "string") {
         const msg = json.message.trim();
-        if (msg.length > 3 && !/seller|error|fail|invalid|unknown/i.test(msg)) {
+        if (
+            msg.length > 3 &&
+            !/^(keys? created|seller|error|fail|invalid|unknown)/i.test(msg)
+        ) {
             return msg;
         }
     }
@@ -75,7 +93,7 @@ function parseAddKeyResponse(text, httpStatus) {
     if (httpStatus >= 500 && !raw) {
         return {
             ok: false,
-            error: `LibreAuth API error (HTTP ${httpStatus})`,
+            error: `LibreAuth API server error (HTTP ${httpStatus})`,
             hint: hintForError("LibreAuth API error"),
         };
     }
@@ -107,13 +125,18 @@ function parseAddKeyResponse(text, httpStatus) {
 }
 
 async function createKey(sellerkey, params) {
+    const payload = { ...params };
+    if (payload.mask) payload.mask = normalizeMask(payload.mask);
     const formats = ["json", "text"];
     let lastFail = null;
 
     for (const format of formats) {
-        const { status, text } = await sellerRaw(sellerkey, "addkey", { ...params, format });
+        const { status, text } = await sellerRaw(sellerkey, "addkey", { ...payload, format });
         const parsed = parseAddKeyResponse(text, status);
-        if (parsed.ok && parsed.key) return parsed;
+        if (parsed.ok && parsed.key) {
+            parsed.mask = payload.mask;
+            return parsed;
+        }
         lastFail = parsed;
         if (parsed.error && parsed.error !== "API ไม่ส่งคีย์กลับมา") break;
     }
@@ -135,4 +158,5 @@ module.exports = {
     createKey,
     verifySellerKey,
     hintForError,
+    normalizeMask,
 };

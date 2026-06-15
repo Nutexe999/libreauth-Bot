@@ -1,6 +1,6 @@
 const { SlashCommandBuilder, Colors, EmbedBuilder } = require("discord.js");
 const { resolveSellerKey, appAutocomplete } = require("../../utils/appResolver");
-const { createKey } = require("../../utils/sellerApi");
+const { createKey, normalizeMask } = require("../../utils/sellerApi");
 const { logKey } = require("../../utils/logkey");
 const { getBotFooter, getLifetimeKeyMask, getAddKeyNote } = require("../../utils/botBrand");
 
@@ -72,12 +72,14 @@ module.exports = {
                 });
             }
             days = customDays;
-            mask = customMask;
+            mask = normalizeMask(customMask);
         } else {
             const daysMap = { "1day-******": 1, "3day-******": 3, "7day-******": 7, [lifetimeMask]: 3650 };
             days = daysMap[keyMask] ?? 1;
-            mask = keyMask;
+            mask = normalizeMask(keyMask);
         }
+
+        const durationLabel = days >= 3650 ? "ตลอดชีพ" : `${days} วัน`;
 
         try {
             const result = await createKey(sellerkey, {
@@ -105,6 +107,7 @@ module.exports = {
             }
 
             const key = String(result.key || "").trim();
+            const sentMask = result.mask || mask;
             if (!key) {
                 return interaction.editReply({
                     embeds: [
@@ -171,7 +174,19 @@ module.exports = {
             }
 
             return interaction.editReply({
-                content: `แอป: ${applicationDisplayName || "-"}\nคีย์: \`${key}\``,
+                embeds: [
+                    new EmbedBuilder()
+                        .setTitle("✅ สร้างคีย์สำเร็จ")
+                        .setDescription(`\`\`\`\n${key}\n\`\`\``)
+                        .addFields(
+                            { name: "แอป", value: applicationDisplayName ? `\`${applicationDisplayName}\`` : "-", inline: true },
+                            { name: "ระยะเวลา", value: durationLabel, inline: true },
+                            { name: "Mask", value: `\`${sentMask}\``, inline: true },
+                        )
+                        .setColor(Colors.Green)
+                        .setFooter({ text: getBotFooter(interaction.client) })
+                        .setTimestamp(),
+                ],
                 ...(ephemeral && { flags: 64 }),
             });
         } catch (err) {
