@@ -7,7 +7,7 @@
     "start": "node index.js"
   },
   "engines": {
-    "node": ">=20.0.0"
+    "node": ">=22.0.0"
   },
   "keywords": [
     "libreauth",
@@ -25,10 +25,7 @@
   },
   "homepage": "https://github.com/Nutexe999/libreauth-Bot#readme",
   "dependencies": {
-    "better-sqlite3": "^9.2.2",
     "discord.js": "^14.14.1",
-    "dotenv": "^16.3.1",
-    "node-fetch": "^2.7.0",
-    "quick.db": "^9.1.7"
+    "dotenv": "^16.3.1"
   }
 }

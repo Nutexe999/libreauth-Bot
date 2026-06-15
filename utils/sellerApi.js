@@ -1,5 +1,3 @@
-const fetch = require("node-fetch");
-
 const BASE = process.env.SELLER_API_URL || "https://libreauth.nutexe.dev/seller-api/";
 
 async function sellerRequest(sellerkey, type, params = {}) {

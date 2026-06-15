@@ -1,6 +1,5 @@
 const config = require("./utils/config.js");
 const db = require("./utils/database");
-const fetch = require("node-fetch");
 const path = require("path");
 const fs = require("fs");
 const {
