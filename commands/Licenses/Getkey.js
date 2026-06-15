@@ -1,6 +1,6 @@
 const { SlashCommandBuilder, Colors, EmbedBuilder } = require("discord.js");
 const { resolveSellerKey, appAutocomplete } = require("../../utils/appResolver");
-const { createKey, normalizeMask } = require("../../utils/sellerApi");
+const { createKey, normalizeMask, maskHint } = require("../../utils/sellerApi");
 const { logKey } = require("../../utils/logkey");
 const { getBotFooter, getLifetimeKeyMask, getAddKeyNote } = require("../../utils/botBrand");
 
@@ -58,6 +58,7 @@ module.exports = {
 
         let days;
         let mask;
+        const rawMaskInput = keyMask === "custom" ? customMask : keyMask;
 
         if (keyMask === "custom") {
             if (!customDays || customDays <= 0 || !customMask) {
@@ -108,6 +109,7 @@ module.exports = {
 
             const key = String(result.key || "").trim();
             const sentMask = result.mask || mask;
+            const hint = maskHint(rawMaskInput, sentMask);
             if (!key) {
                 return interaction.editReply({
                     embeds: [
@@ -177,7 +179,9 @@ module.exports = {
                 embeds: [
                     new EmbedBuilder()
                         .setTitle("✅ สร้างคีย์สำเร็จ")
-                        .setDescription(`\`\`\`\n${key}\n\`\`\``)
+                        .setDescription(
+                            (hint ? `${hint}\n\n` : "") + `\`\`\`\n${key}\n\`\`\``
+                        )
                         .addFields(
                             { name: "แอป", value: applicationDisplayName ? `\`${applicationDisplayName}\`` : "-", inline: true },
                             { name: "ระยะเวลา", value: durationLabel, inline: true },

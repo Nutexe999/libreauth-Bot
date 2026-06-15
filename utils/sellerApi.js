@@ -58,13 +58,31 @@ function hintForError(msg) {
     return null;
 }
 
+function shouldAutoExpandMask(mask) {
+    const m = String(mask || "").trim();
+    if (!m || m.includes("*")) return false;
+    if (m.length < 5) return true;
+    return /^\d+(d|day|days|w|week|weeks|m|month|months|y|year|years)?$/i.test(m);
+}
+
 function normalizeMask(mask) {
     let m = String(mask || "").trim();
     if (!m) return "******-******-******";
-    if (!m.includes("*") && m.length < 12) {
+    if (shouldAutoExpandMask(m)) {
         m = m.replace(/-+$/, "") + "-******-******";
     }
     return m;
+}
+
+function maskHint(inputMask, sentMask) {
+    const raw = String(inputMask || "").trim();
+    const sent = String(sentMask || "").trim();
+    if (!raw) return null;
+    if (raw === sent) return null;
+    if (!raw.includes("*") && sent.includes("*")) {
+        return `ระบบเติม \`*\` ให้อัตโนมัติเฉพาะ mask สั้นแบบ 1d/1day — ถ้าต้องการ prefix+สุ่ม พิมพ์เอง เช่น \`${raw}-******\``;
+    }
+    return null;
 }
 
 function extractKey(json) {
@@ -159,4 +177,6 @@ module.exports = {
     verifySellerKey,
     hintForError,
     normalizeMask,
+    shouldAutoExpandMask,
+    maskHint,
 };
