@@ -1,6 +1,6 @@
 const { SlashCommandBuilder, Colors, EmbedBuilder } = require("discord.js");
 const { resolveSellerKey, appAutocomplete } = require("../../utils/appResolver");
-const { sellerText } = require("../../utils/sellerApi");
+const { createKey } = require("../../utils/sellerApi");
 const { logKey } = require("../../utils/logkey");
 const { getBotFooter, getLifetimeKeyMask, getAddKeyNote } = require("../../utils/botBrand");
 
@@ -80,25 +80,20 @@ module.exports = {
         }
 
         try {
-            const text = await sellerText(sellerkey, "addkey", {
+            const result = await createKey(sellerkey, {
                 expiry: days,
                 mask,
                 level: 1,
                 amount: 1,
                 character: 1,
                 note: getAddKeyNote(interaction.client),
-                format: "text",
             });
 
-            if (text.includes('"success":false') || text.includes('"message"')) {
-                let msg = text;
-                try {
-                    msg = JSON.parse(text).message || text;
-                } catch {}
+            if (!result.ok || !result.key) {
                 return interaction.editReply({
                     embeds: [
                         new EmbedBuilder()
-                            .setTitle(String(msg))
+                            .setTitle(String(result.error || "สร้างคีย์ไม่สำเร็จ"))
                             .setDescription("ตรวจสอบ Seller Key และสิทธิ์ addkey ใน Panel")
                             .setColor(Colors.Red)
                             .setFooter({ text: getBotFooter(interaction.client) })
@@ -108,7 +103,7 @@ module.exports = {
                 });
             }
 
-            const key = text.trim();
+            const key = result.key;
             await logKey(interaction.user, key, targetUser, applicationDisplayName);
 
             if (targetUser) {

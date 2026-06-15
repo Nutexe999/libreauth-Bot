@@ -1,6 +1,6 @@
 const { SlashCommandBuilder, Colors, EmbedBuilder } = require("discord.js");
 const db = require("../../utils/database");
-const { appAutocomplete } = require("../../utils/appResolver");
+const { appAutocomplete, bustAppCache } = require("../../utils/appResolver");
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -49,6 +49,7 @@ module.exports = {
 
         const removed = applications.splice(idx, 1)[0];
         await db.set(`applications_${idfrom}`, applications);
+        bustAppCache(idfrom);
 
         const current = await db.get(`token_${idfrom}`);
         if (current === removed.sellerkey) {

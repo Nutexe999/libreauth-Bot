@@ -15,6 +15,8 @@ const {
 const { loadCommandsJSON, registerCommands } = require("./utils/registerCommands");
 const { getBotName, getBotFooter } = require("./utils/botBrand");
 
+const IGNORE_INTERACTION = new Set([10062, 40060]);
+
 const client = new Client({
     intents: [GatewayIntentBits.Guilds],
 });
@@ -36,6 +38,7 @@ const clientCommands = new Collection();
 client.on("error", console.error);
 
 process.on("unhandledRejection", (error) => {
+    if (IGNORE_INTERACTION.has(error?.code)) return;
     console.error("[unhandledRejection]", error);
 });
 
@@ -72,11 +75,11 @@ client.on("interactionCreate", async (interaction) => {
     if (interaction.isAutocomplete()) {
         const command = clientCommands.get(interaction.commandName);
         if (command?.autocomplete) {
+            await command.autocomplete(interaction);
+        } else if (!interaction.responded) {
             try {
-                await command.autocomplete(interaction);
-            } catch (e) {
-                console.error(e);
-            }
+                await interaction.respond([]);
+            } catch {}
         }
         return;
     }
@@ -89,7 +92,14 @@ client.on("interactionCreate", async (interaction) => {
     const idfrom = interaction.guild ? interaction.guild.id : interaction.user.id;
     const ephemeral = !!interaction.guild;
 
-    await interaction.deferReply({ ...(ephemeral && { flags: MessageFlags.Ephemeral }) });
+    try {
+        if (!interaction.deferred && !interaction.replied) {
+            await interaction.deferReply({ ...(ephemeral && { flags: MessageFlags.Ephemeral }) });
+        }
+    } catch (e) {
+        if (!IGNORE_INTERACTION.has(e.code)) console.error(e);
+        return;
+    }
 
     if (interaction.member) {
         const hasPerms = interaction.member.roles.cache.find((x) => x.name === "perms");
@@ -123,8 +133,8 @@ client.on("interactionCreate", async (interaction) => {
     try {
         await command.execute(interaction);
     } catch (err) {
-        console.error(err);
-        await interaction.editReply({
+        if (!IGNORE_INTERACTION.has(err?.code)) console.error(err);
+        const payload = {
             embeds: [
                 new EmbedBuilder()
                     .setAuthor({ name: "ดำเนินการไม่สำเร็จ" })
@@ -132,8 +142,15 @@ client.on("interactionCreate", async (interaction) => {
                     .setTimestamp()
                     .setFooter({ text: getBotFooter(client), iconURL: client.user.displayAvatarURL() }),
             ],
-            flags: MessageFlags.Ephemeral,
-        });
+            ...(ephemeral && { flags: MessageFlags.Ephemeral }),
+        };
+        try {
+            if (interaction.deferred || interaction.replied) {
+                await interaction.editReply(payload);
+            } else {
+                await interaction.reply(payload);
+            }
+        } catch {}
     }
 });
 

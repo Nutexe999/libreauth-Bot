@@ -231,7 +231,7 @@ docker compose logs -f libreauth-bot
 |----------|---------|
 | `TOKEN` | — (required) |
 | `TYPE` | `production` |
-| `DATABASE_PATH` | `/data/json.sqlite` |
+| `DATABASE_PATH` | `/data/data.sqlite` |
 | `SELLER_API_URL` | `https://libreauth.nutexe.dev/seller-api/` |
 
 Volume `libreauth-data` เก็บ SQLite — ข้อมูลแอปไม่หายเมื่อ restart container

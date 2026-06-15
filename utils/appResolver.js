@@ -1,10 +1,24 @@
 const { EmbedBuilder, Colors } = require("discord.js");
 const db = require("./database");
 
+const appCache = new Map();
+
+async function getApplications(idfrom) {
+    const hit = appCache.get(idfrom);
+    if (hit && Date.now() - hit.at < 60000) return hit.list;
+    const list = (await db.get(`applications_${idfrom}`)) || [];
+    appCache.set(idfrom, { list, at: Date.now() });
+    return list;
+}
+
+function bustAppCache(idfrom) {
+    appCache.delete(idfrom);
+}
+
 async function resolveSellerKey(interaction, appName) {
     const idfrom = interaction.guild ? interaction.guild.id : interaction.user.id;
     const ephemeral = !!interaction.guild;
-    const applications = (await db.get(`applications_${idfrom}`)) || [];
+    const applications = await getApplications(idfrom);
 
     let sellerkey;
     let applicationDisplayName = null;
@@ -50,15 +64,27 @@ async function resolveSellerKey(interaction, appName) {
     return { sellerkey, applicationDisplayName, idfrom, ephemeral, applications };
 }
 
+const IGNORE_INTERACTION = new Set([10062, 40060]);
+
 async function appAutocomplete(interaction) {
-    const idfrom = interaction.guild ? interaction.guild.id : interaction.user.id;
-    const applications = (await db.get(`applications_${idfrom}`)) || [];
-    const focused = interaction.options.getFocused();
-    const filtered = applications
-        .filter((app) => app.application.toLowerCase().includes(focused.toLowerCase()))
-        .slice(0, 25)
-        .map((app) => ({ name: app.application, value: app.application }));
-    await interaction.respond(filtered);
+    if (interaction.responded) return;
+    try {
+        const idfrom = interaction.guild ? interaction.guild.id : interaction.user.id;
+        const applications = await getApplications(idfrom);
+        const focused = (interaction.options.getFocused() || "").toLowerCase();
+        const filtered = applications
+            .filter((app) => app.application.toLowerCase().includes(focused))
+            .slice(0, 25)
+            .map((app) => ({ name: app.application, value: app.application }));
+        await interaction.respond(filtered);
+    } catch (e) {
+        if (!IGNORE_INTERACTION.has(e.code)) console.error(e);
+        if (!interaction.responded) {
+            try {
+                await interaction.respond([]);
+            } catch {}
+        }
+    }
 }
 
-module.exports = { resolveSellerKey, appAutocomplete };
+module.exports = { resolveSellerKey, appAutocomplete, bustAppCache };

@@ -1,6 +1,7 @@
 const { SlashCommandBuilder, Colors, EmbedBuilder } = require("discord.js");
 const db = require("../../utils/database");
 const { verifySellerKey } = require("../../utils/sellerApi");
+const { bustAppCache } = require("../../utils/appResolver");
 const { getBotFooter } = require("../../utils/botBrand");
 
 function idGen() {
@@ -70,6 +71,7 @@ module.exports = {
         applications.push({ application: name, sellerkey, id: idGen() });
         await db.set(`applications_${idfrom}`, applications);
         await db.set(`token_${idfrom}`, sellerkey);
+        bustAppCache(idfrom);
 
         return interaction.editReply({
             embeds: [
