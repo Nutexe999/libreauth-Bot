@@ -279,7 +279,7 @@ npm start
 | `Seller Key ไม่ถูกต้อง` | ตรวจ key + IP whitelist ใน Panel |
 | `ต้องมีบทบาท perms` | สร้าง role `perms` แล้วมอบให้ user |
 | `Unknown seller API type` on `/getkey` | เปิดสิทธิ์ **addkey** ใน Panel → Seller API → Key Permissions |
-| คีย์ว่าง / DM ไม่มีคีย์ | เปิดสิทธิ์ **addkey** ใน Panel — API ตอบ HTTP 500 ถ้ายังไม่เปิด |
+| `/getkey` ไม่ได้ | ต้องแพ็กเกจ **Pro/Enterprise** ถึงจะใช้ Seller API ได้ |
 | บอท offline หลัง deploy | ตรวจ `TOKEN` ใน env — อย่า commit `.env` |
 
 ---
