@@ -104,7 +104,24 @@ module.exports = {
                 });
             }
 
-            const key = result.key;
+            const key = String(result.key || "").trim();
+            if (!key) {
+                return interaction.editReply({
+                    embeds: [
+                        new EmbedBuilder()
+                            .setTitle("ได้รับ response แต่ไม่มีคีย์")
+                            .setDescription(
+                                result.hint ||
+                                    "LibreAuth API addkey ตอบกลับว่าง — เปิดสิทธิ์ addkey ใน Panel → Seller API"
+                            )
+                            .setColor(Colors.Red)
+                            .setFooter({ text: getBotFooter(interaction.client) })
+                            .setTimestamp(),
+                    ],
+                    ...(ephemeral && { flags: 64 }),
+                });
+            }
+
             await logKey(interaction.user, key, targetUser, applicationDisplayName);
 
             if (targetUser) {
