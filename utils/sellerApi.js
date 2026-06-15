@@ -1,16 +1,18 @@
 const BASE = process.env.SELLER_API_URL || "https://libreauth.nutexe.dev/seller-api/";
 
-async function sellerRequest(sellerkey, type, params = {}) {
-    const url = new URL(BASE);
-    url.searchParams.set("sellerkey", sellerkey);
-    url.searchParams.set("type", type);
+function buildParams(sellerkey, type, params = {}) {
+    const body = new URLSearchParams({ sellerkey, type });
     for (const [key, val] of Object.entries(params)) {
         if (val !== undefined && val !== null && val !== "") {
-            url.searchParams.set(key, String(val));
+            body.set(key, String(val));
         }
     }
-    const res = await fetch(url.toString());
-    const text = await res.text();
+    return body;
+}
+
+async function sellerRequest(sellerkey, type, params = {}) {
+    const body = buildParams(sellerkey, type, params);
+    const text = await fetch(`${BASE}?${body.toString()}`).then((r) => r.text());
     try {
         return JSON.parse(text);
     } catch {
@@ -19,16 +21,24 @@ async function sellerRequest(sellerkey, type, params = {}) {
 }
 
 async function sellerText(sellerkey, type, params = {}) {
-    const url = new URL(BASE);
-    url.searchParams.set("sellerkey", sellerkey);
-    url.searchParams.set("type", type);
-    for (const [key, val] of Object.entries(params)) {
-        if (val !== undefined && val !== null && val !== "") {
-            url.searchParams.set(key, String(val));
-        }
+    const body = buildParams(sellerkey, type, params);
+    return fetch(`${BASE}?${body.toString()}`).then((r) => r.text());
+}
+
+const ERROR_HINTS = {
+    "Unknown seller API type":
+        "Seller Key ไม่มีสิทธิ์ addkey — เปิดใน Panel → แอป → Seller API → Key Permissions",
+    "Invalid sellerkey": "Seller Key ไม่ถูกต้อง หรือ IP ไม่ตรง whitelist",
+    "Seller API is not available":
+        "แพ็กเกจต้องเป็น Pro หรือ Enterprise ถึงจะใช้ Seller API ได้",
+};
+
+function hintForError(msg) {
+    if (!msg) return null;
+    for (const [key, hint] of Object.entries(ERROR_HINTS)) {
+        if (String(msg).includes(key)) return hint;
     }
-    const res = await fetch(url.toString());
-    return res.text();
+    return null;
 }
 
 function parseAddKeyResponse(text) {
@@ -38,7 +48,7 @@ function parseAddKeyResponse(text) {
     try {
         const json = JSON.parse(raw);
         if (json.success === false) {
-            return { ok: false, error: json.message || raw };
+            return { ok: false, error: json.message || raw, hint: hintForError(json.message) };
         }
         const key =
             json.key ||
@@ -46,10 +56,10 @@ function parseAddKeyResponse(text) {
             (Array.isArray(json.keys) ? json.keys[0] : null) ||
             (Array.isArray(json.key) ? json.key[0] : null);
         if (key) return { ok: true, key: String(key).trim() };
-        if (typeof json.message === "string" && json.message.length > 0) {
+        if (typeof json.message === "string" && json.message.length > 3 && !json.message.toLowerCase().includes("seller")) {
             return { ok: true, key: json.message.trim() };
         }
-        return { ok: false, error: "ไม่พบคีย์ใน response" };
+        return { ok: false, error: json.message || "ไม่พบคีย์ใน response" };
     } catch {
         if (raw.startsWith("{")) {
             return { ok: false, error: raw };
@@ -59,14 +69,13 @@ function parseAddKeyResponse(text) {
 }
 
 async function createKey(sellerkey, params) {
-    const types = ["addkey", "add"];
-    for (const type of types) {
-        const text = await sellerText(sellerkey, type, { ...params, format: "text" });
-        const parsed = parseAddKeyResponse(text);
-        if (parsed.ok && parsed.key) return parsed;
-        if (!parsed.ok && type === types[types.length - 1]) return parsed;
-    }
-    return { ok: false, error: "สร้างคีย์ไม่สำเร็จ" };
+    const text = await sellerText(sellerkey, "addkey", {
+        ...params,
+        format: "text",
+    });
+    const parsed = parseAddKeyResponse(text);
+    if (parsed.ok && parsed.key) return parsed;
+    return parsed.ok === false ? parsed : { ok: false, error: "สร้างคีย์ไม่สำเร็จ" };
 }
 
 async function verifySellerKey(sellerkey) {
@@ -81,4 +90,5 @@ module.exports = {
     parseAddKeyResponse,
     createKey,
     verifySellerKey,
+    hintForError,
 };

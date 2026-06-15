@@ -90,11 +90,12 @@ module.exports = {
             });
 
             if (!result.ok || !result.key) {
+                const hint = result.hint || "ตรวจสอบ Seller Key, สิทธิ์ addkey และแพ็กเกจ Pro/Enterprise ใน Panel";
                 return interaction.editReply({
                     embeds: [
                         new EmbedBuilder()
                             .setTitle(String(result.error || "สร้างคีย์ไม่สำเร็จ"))
-                            .setDescription("ตรวจสอบ Seller Key และสิทธิ์ addkey ใน Panel")
+                            .setDescription(hint)
                             .setColor(Colors.Red)
                             .setFooter({ text: getBotFooter(interaction.client) })
                             .setTimestamp(),
