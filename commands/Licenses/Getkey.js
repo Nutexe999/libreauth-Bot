@@ -75,22 +75,29 @@ module.exports = {
             days = customDays;
             mask = normalizeMask(customMask);
         } else {
-            const daysMap = { "1day-******": 1, "3day-******": 3, "7day-******": 7, [lifetimeMask]: 3650 };
-            days = daysMap[keyMask] ?? 1;
+            const daysMap = { "1day-******": 1, "3day-******": 3, "7day-******": 7 };
+            const isLifetime = keyMask === lifetimeMask;
+            days = isLifetime ? 0 : (daysMap[keyMask] ?? 1);
             mask = normalizeMask(keyMask);
         }
 
-        const durationLabel = days >= 3650 ? "ตลอดชีพ" : `${days} วัน`;
+        const durationLabel = days === 0 ? "ตลอดชีพ" : `${days} วัน`;
 
         try {
-            const result = await createKey(sellerkey, {
-                expiry: days,
+            const keyParams = {
                 mask,
                 level: 1,
                 amount: 1,
                 character: 1,
                 note: getAddKeyNote(interaction.client),
-            });
+            };
+            if (days === 0) {
+                keyParams.expiry_unit = "lifetime";
+                keyParams.expiry_val = 0;
+            } else {
+                keyParams.expiry = days;
+            }
+            const result = await createKey(sellerkey, keyParams);
 
             if (!result.ok || !result.key) {
                 const hint = result.hint || "ตรวจสอบ Seller Key, สิทธิ์ addkey และแพ็กเกจ Pro/Enterprise ใน Panel";
