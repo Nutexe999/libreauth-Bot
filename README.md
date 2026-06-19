@@ -65,7 +65,7 @@ libreauth-Bot/
 ├── commands/
 │   ├── Licenses/            # getkey, keyinfo, ban, unban, delete, reset-hwid
 │   ├── Settings/            # add/delete application, seller-info
-│   ├── Hashes/              # addhash
+│   ├── Hashes/              # addhash, delhash
 │   └── Users/               # extend-user
 ├── utils/
 │   ├── sellerApi.js         # LibreAuth API client (GET query)
@@ -157,6 +157,7 @@ npm start
 | Command | API `type` | Description |
 |---------|------------|-------------|
 | `/addhash` | `addhash` | เพิ่ม MD5 hash ลง whitelist หลัง build |
+| `/delhash` | `delhash` / `resethashes` | ลบ MD5 ตัวเดียว หรือ `all` ลบทั้งหมด |
 
 ### 👤 Users
 
@@ -197,6 +198,7 @@ curl -G 'https://libreauth.nutexe.dev/seller-api/' \
 | deletekey | `del` |
 | reset-hwid | `resetuser` |
 | addhash | `addhash` |
+| delhash | `delhash`, `resethashes` (hash=all) |
 | extend-user | `extend` |
 
 📖 [LibreAuth Seller API Docs](https://libreauth.nutexe.dev/docs/?p=seller-api)

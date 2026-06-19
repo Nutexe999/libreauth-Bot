@@ -1,7 +1,15 @@
 const { SlashCommandBuilder, Colors, EmbedBuilder } = require("discord.js");
 const { resolveSellerKey, appAutocomplete } = require("../../utils/appResolver");
-const { sellerRequest } = require("../../utils/sellerApi");
+const { sellerRequest, hintForError } = require("../../utils/sellerApi");
 const { getBotFooter } = require("../../utils/botBrand");
+
+function normalizeMd5(raw) {
+    return String(raw || "").trim().toLowerCase();
+}
+
+function isMd5(hex) {
+    return /^[a-f0-9]{32}$/.test(hex);
+}
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -22,7 +30,20 @@ module.exports = {
         if (resolved.error) return interaction.editReply(resolved.error);
 
         const { sellerkey, ephemeral } = resolved;
-        const hash = interaction.options.getString("hash").trim();
+        const hash = normalizeMd5(interaction.options.getString("hash"));
+
+        if (!isMd5(hash)) {
+            return interaction.editReply({
+                embeds: [
+                    new EmbedBuilder()
+                        .setDescription("MD5 ต้องเป็น hex 32 ตัว (a-f, 0-9)")
+                        .setColor(Colors.Red)
+                        .setTimestamp(),
+                ],
+                ...(ephemeral && { flags: 64 }),
+            });
+        }
+
         const json = await sellerRequest(sellerkey, "addhash", { hash });
 
         if (json.success) {
@@ -43,6 +64,7 @@ module.exports = {
             embeds: [
                 new EmbedBuilder()
                     .setTitle(json.message || "เพิ่ม hash ไม่สำเร็จ")
+                    .setDescription(hintForError(json.message) || null)
                     .setColor(Colors.Red)
                     .setFooter({ text: getBotFooter(interaction.client) })
                     .setTimestamp(),
